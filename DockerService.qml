@@ -57,7 +57,7 @@ Item {
                             const data = JSON.parse(line);
                             const name = Array.isArray(data.Names) ? data.Names[0] : data.Names;
                             return {
-                                id: data.Id || "",
+                                id: data.Id || data.ID || "",
                                 name: name || "<unnamed>",
                                 status: data.Status || "",
                                 state: data.State || "",
