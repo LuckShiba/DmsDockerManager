@@ -55,10 +55,10 @@ Item {
                     const containers = lines.map(line => {
                         try {
                             const data = JSON.parse(line);
-
+                            const name = Array.isArray(data.Names) ? data.Names[0] : data.Names;
                             return {
                                 id: data.Id || "",
-                                name: data.Names?.[0] || "",
+                                name: name || "<unnamed>",
                                 status: data.Status || "",
                                 state: data.State || "",
                                 image: data.Image || "",
