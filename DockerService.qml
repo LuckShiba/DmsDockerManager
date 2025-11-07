@@ -48,23 +48,31 @@ Item {
     function fetchContainers() {
         Proc.runCommand(
             "dockerManager.dockerPs",
-            ["docker", "ps", "-a", "--format", "{{.ID}}|{{.Names}}|{{.Status}}|{{.State}}|{{.Image}}"],
+            ["docker", "ps", "-a", "--format", "{{ json . }}"],
             (stdout, exitCode) => {
                 if (exitCode === 0) {
                     const lines = stdout.trim().split("\n").filter(line => line.length > 0);
                     const containers = lines.map(line => {
-                        const parts = line.split("|");
-                        return {
-                            id: parts[0] || "",
-                            name: parts[1] || "",
-                            status: parts[2] || "",
-                            state: parts[3] || "",
-                            image: parts[4] || "",
-                            isRunning: parts[3] === "running",
-                            isPaused: parts[3] === "paused",
-                        };
-                    });
-                    const runningCount = containers.filter(c => c.state === "running").length;
+                        try {
+                            const data = JSON.parse(line);
+
+                            return {
+                                id: data.Id || "",
+                                name: data.Names?.[0] || "",
+                                status: data.Status || "",
+                                state: data.State || "",
+                                image: data.Image || "",
+                                isRunning: data.State === "running",
+                                isPaused: data.State === "paused",
+                                created: data.Created || "",
+                                ports: data.Ports || [],
+                            };
+                        } catch (e) {
+                            console.error("Failed to parse container JSON:", e, line);
+                            return null;
+                        }
+                    }).filter(c => c !== null);
+                    const runningCount = containers.filter(c => c.isRunning).length;
                     
                     PluginService.setGlobalVar("dockerManager", "containers", containers);
                     PluginService.setGlobalVar("dockerManager", "runningContainers", runningCount);
