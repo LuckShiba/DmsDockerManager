@@ -1,0 +1,19 @@
+{
+    "id": "dockerManager",
+    "name": "Docker Manager",
+    "description": "Display Docker container status and management controls",
+    "version": "1.0.0",
+    "author": "LuckShiba",
+    "type": "widget",
+    "capabilities": ["docker-management", "dankbar-widget"],
+    "component": "./DockerWidget.qml",
+    "icon": "dns",
+    "settings": "./DockerSettings.qml",
+    "requires_dms": ">=0.3.0",
+    "requires": ["docker"],
+    "permissions": [
+        "settings_read",
+        "settings_write",
+        "process"
+    ]
+}

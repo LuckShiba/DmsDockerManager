@@ -1,0 +1,68 @@
+# DMS Docker Manager
+
+Docker container monitoring and management plugin for [DankMaterialShell](https://danklinux.com/)
+Inspired by GNOME extension [Easy Docker Containers](https://extensions.gnome.org/extension/2224/easy-docker-containers/)
+
+## Features
+
+- Bar widget displaying Docker status with running container count
+- Expandable popout showing all containers
+- Container management: start, stop, restart, pause, unpause
+- Terminal access to running containers
+- Container log viewing
+- Auto-refresh with configurable interval
+
+## Installation
+
+<!--
+### Using DMS cli
+
+```sh
+dms plugins install DockerManager
+```
+
+### Using DMS Settings
+
+1. Open Settings -> Plugins
+2. Click in "Browse"
+3. Enable third party plugins
+4. Install Docker Manager
+
+
+ -->
+
+### Manual
+
+1. Copy plugin directory to `~/.config/DankMaterialShell/plugins/DockerManager`
+```sh
+git clone https://github.com/LuckShiba/DmsDockerManager ~/.config/DankMaterialShell/plugins/DockerManager
+```
+2. Open Settings -> Plugins and click in "Scan"
+3. Enable "Docker Manager"
+4. Add "Docker Manager" to DankBar widget list
+
+## Requirements
+
+- Docker or Podman accessible via `docker` command
+- User permissions to run Docker commands (make sure your user is added to the `docker` or `podman` group)
+
+## Configuration
+
+Settings available in plugin settings:
+
+- **Refresh Interval**: Container status check frequency (1-30 seconds, default: 5s)
+- **Terminal Application**: Command for terminal windows (default: `alacritty --hold`)
+- **Shell Path**: Shell for container exec (default: `/bin/sh`)
+
+## Usage
+
+Bar widget shows:
+- Docker icon (colored: running containers, no color: no containers, red: unavailable)
+- Running container count
+
+Click widget to open container list. Expand containers to access actions:
+- Start/Restart containers
+- Pause/Unpause running containers
+- Stop containers
+- Open interactive shell
+- View logs
