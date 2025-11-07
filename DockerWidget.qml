@@ -116,6 +116,7 @@ PluginComponent {
                 leftMargin: Theme.spacingM
                 rightMargin: Theme.spacingM
                 spacing: 2
+                clip: true
                 model: globalContainers.value
 
                 delegate: Column {
