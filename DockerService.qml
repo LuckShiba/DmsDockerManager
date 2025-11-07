@@ -66,12 +66,32 @@ Item {
                                 isPaused: data.State === "paused",
                                 created: data.Created || "",
                                 ports: data.Ports || [],
+                                startedAt: data.StartedAt || 0,
+                                exitedAt: data.ExitedAt || 0
                             };
                         } catch (e) {
                             console.error("Failed to parse container JSON:", e, line);
                             return null;
                         }
-                    }).filter(c => c !== null);
+                    }).filter(c => c !== null)
+                    .sort((a, b) => {
+                        const priority = {
+                            running: 1,
+                            paused: 2,
+                            default: 3
+                        };
+                        const getP = x => priority[x.state] || priority.default;
+                        const aPriority = getP(a);
+                        const bPriority = getP(b);
+                        
+                        if (aPriority !== bPriority) {
+                            return aPriority - bPriority;
+                        }
+                        
+                        const aTime = Math.max(a.startedAt, a.exitedAt);
+                        const bTime = Math.max(b.startedAt, b.exitedAt);
+                        return bTime - aTime;
+                    });
                     const runningCount = containers.filter(c => c.isRunning).length;
                     
                     PluginService.setGlobalVar("dockerManager", "containers", containers);

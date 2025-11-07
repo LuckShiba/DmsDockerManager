@@ -116,18 +116,7 @@ PluginComponent {
                 leftMargin: Theme.spacingM
                 rightMargin: Theme.spacingM
                 spacing: 2
-                model: {
-                    const priority = {
-                        running: 1,
-                        paused: 2,
-                        default: 3,
-                    };
-                    const getP = x => priority[x.state] || priority.default;
-
-                    const sorted = globalContainers.value.slice();
-                    sorted.sort((a, b) => getP(a) - getP(b));
-                    return sorted;
-                }
+                model: globalContainers.value
 
                 delegate: Column {
                         id: containerDelegate
