@@ -109,7 +109,7 @@ PluginComponent {
 
             DankListView {
                 id: containerList
-                width: parent.width - 2 * Theme.spacingM
+                width: parent.width
                 height: root.popoutHeight - popoutColumn.headerHeight - popoutColumn.detailsHeight - Theme.spacingXL
                 topMargin: Theme.spacingS
                 bottomMargin: Theme.spacingS
@@ -121,7 +121,7 @@ PluginComponent {
 
                 delegate: Column {
                         id: containerDelegate
-                        width: containerList.width
+                        width: containerList.width - containerList.leftMargin - containerList.rightMargin
                         spacing: 0
 
                         property bool isExpanded: root.expandedContainers[modelData.name] || false
@@ -129,54 +129,54 @@ PluginComponent {
                         StyledRect {
                             width: parent.width
                             height: 48
-                            radius: isExpanded ? Theme.cornerRadius : Theme.cornerRadius
+                            radius: Theme.cornerRadius
                             color: containerHeaderMouse.containsMouse ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
                             border.width: 0
 
-                            Row {
-                                anchors.fill: parent
+                            DankIcon {
+                                name: "deployed_code"
+                                size: Theme.iconSize
+                                color: {
+                                    if (modelData.isRunning) return Theme.primary;
+                                    if (modelData.isPaused) return Theme.warning;
+                                    return Theme.surfaceText;
+                                }
+                                anchors.left: parent.left
                                 anchors.leftMargin: Theme.spacingM
-                                anchors.rightMargin: Theme.spacingM
-                                spacing: Theme.spacingM
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
 
-                                DankIcon {
-                                    name: "deployed_code"
-                                    size: Theme.iconSize
-                                    color: {
-                                        if (modelData.isRunning) return Theme.primary;
-                                        if (modelData.isPaused) return Theme.warning;
-                                        return Theme.surfaceText;
-                                    }
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
+                            Column {
+                                anchors.left: parent.left
+                                anchors.leftMargin: Theme.spacingM * 2 + Theme.iconSize
+                                anchors.right: parent.right
+                                anchors.rightMargin: Theme.spacingM * 2 + Theme.iconSize
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: 2
 
-                                Column {
-                                  width: parent.width - 100
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    spacing: 2
-
-                                    StyledText {
-                                        text: modelData.name
-                                        font.pixelSize: Theme.fontSizeMedium
-                                        font.weight: Font.Medium
-                                        color: Theme.surfaceText
-                                    }
-
-                                    StyledText {
-                                        text: modelData.image
-                                        font.pixelSize: Theme.fontSizeSmall
-                                        color: Theme.surfaceVariantText
-                                        elide: Text.ElideRight
-                                        width: parent.width
-                                    }
-                                }
-
-                                DankIcon {
-                                    name: isExpanded ? "expand_less" : "expand_more"
-                                    size: Theme.iconSize
+                                StyledText {
+                                    text: modelData.name
+                                    font.pixelSize: Theme.fontSizeMedium
+                                    font.weight: Font.Medium
                                     color: Theme.surfaceText
-                                    anchors.verticalCenter: parent.verticalCenter
                                 }
+
+                                StyledText {
+                                    text: modelData.image
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    color: Theme.surfaceVariantText
+                                    elide: Text.ElideRight
+                                    width: parent.width
+                                }
+                            }
+
+                            DankIcon {
+                                name: isExpanded ? "expand_less" : "expand_more"
+                                size: Theme.iconSize
+                                color: Theme.surfaceText
+                                anchors.right: parent.right
+                                anchors.rightMargin: Theme.spacingM
+                                anchors.verticalCenter: parent.verticalCenter
                             }
 
                             MouseArea {
