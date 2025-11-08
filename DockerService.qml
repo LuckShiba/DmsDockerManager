@@ -34,38 +34,30 @@ Item {
     }
 
     function fetchContainers() {
-        Proc.runCommand("dockerManager.dockerPs", ["docker", "container", "ls", "-a", "--format", "{{ json . }}"], (stdout, exitCode) => {
+        Proc.runCommand("dockerManager.dockerInspect", ["sh", "-c", "docker container inspect $(docker container ls -aq)"], (stdout, exitCode) => {
             if (exitCode === 0) {
                 try {
-                    const lines = stdout.trim().split("\n").filter(line => line.length > 0);
-                    const containers = lines.map(line => {
+                    const containers = JSON.parse(stdout).map(container => {
                         try {
-                            const data = JSON.parse(line);
-                            const labels = data.Labels || {};
-                            const composeProject = labels["com.docker.compose.project"] || labels["io.podman.compose.project"] || "";
-                            const composeService = labels["com.docker.compose.service"] || labels["io.podman.compose.service"] || "";
-                            const composeWorkingDir = labels["com.docker.compose.project.working_dir"] || "";
-                            const composeConfigFiles = labels["com.docker.compose.project.config_files"] || "compose.yaml";
-                            const isRunning = data.State === "running";
-                            const isPaused = data.State === "paused";
-                            const name = Array.isArray(data.Names) ? data.Names[0] : data.Names;
+                            const labels = container.Config?.Labels || {};
+                            const state = container.State?.Status || "";
 
                             return {
-                                id: data.Id || "",
-                                name: name || "",
-                                status: data.Status || "",
-                                state: data.State || "",
-                                image: data.Image || "",
-                                isRunning: isRunning,
-                                isPaused: isPaused,
-                                created: data.Created || "",
-                                composeProject: composeProject,
-                                composeService: composeService,
-                                composeWorkingDir: composeWorkingDir,
-                                composeConfigFiles: composeConfigFiles
+                                id: container.Id || "",
+                                name: container.Name?.replace(/^\//, "") || "",
+                                status: `${state.charAt(0).toUpperCase() + state.slice(1)}`,
+                                state: state,
+                                image: container.Config?.Image || container.ImageName || "",
+                                isRunning: container.State?.Running || false,
+                                isPaused: container.State?.Paused || false,
+                                created: container.Created || "",
+                                composeProject: labels["com.docker.compose.project"] || labels["io.podman.compose.project"] || "",
+                                composeService: labels["com.docker.compose.service"] || labels["io.podman.compose.service"] || "",
+                                composeWorkingDir: labels["com.docker.compose.project.working_dir"] || "",
+                                composeConfigFiles: labels["com.docker.compose.project.config_files"] || "compose.yaml"
                             };
                         } catch (e) {
-                            console.error("DockerManager: Failed to parse container JSON:", e, line);
+                            console.error("DockerManager: Failed to parse container data:", e, container);
                             return null;
                         }
                     }).filter(c => c !== null).sort((a, b) => {
@@ -74,18 +66,12 @@ Item {
                             paused: 2,
                             default: 3
                         };
-                        const getP = x => priority[x.state] || priority.default;
-                        const aPriority = getP(a);
-                        const bPriority = getP(b);
-
-                        if (aPriority !== bPriority) {
+                        const aPriority = priority[a.state] || priority.default;
+                        const bPriority = priority[b.state] || priority.default;
+                        if (aPriority !== bPriority)
                             return aPriority - bPriority;
-                        }
-
                         return a.name.localeCompare(b.name);
                     });
-
-                    const runningCount = containers.filter(c => c.isRunning).length;
 
                     const projectMap = {};
                     containers.forEach(container => {
@@ -108,15 +94,13 @@ Item {
                         }
                     });
 
-                    const projects = Object.values(projectMap).sort((a, b) => {
-                        if (a.runningCount !== b.runningCount) {
+                    updateContainers(containers, containers.filter(c => c.isRunning).length, Object.values(projectMap).sort((a, b) => {
+                        if (a.runningCount !== b.runningCount)
                             return b.runningCount - a.runningCount;
-                        }
                         return a.name.localeCompare(b.name);
-                    });
-                    updateContainers(containers, runningCount, projects);
+                    }));
                 } catch (e) {
-                    console.error("DockerManager: Failed to parse docker ps output:", e);
+                    console.error("DockerManager: Failed to parse docker inspect output:", e);
                     updateContainers();
                 }
             } else {
