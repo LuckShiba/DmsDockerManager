@@ -49,9 +49,9 @@ PluginComponent {
         refreshInterval: root.refreshInterval
     }
 
-    function toggleContainer(containerName) {
+    function toggleContainer(containerId) {
         let expanded = root.expandedContainers;
-        expanded[containerName] = !expanded[containerName];
+        expanded[containerId] = !expanded[containerId];
         root.expandedContainers = expanded;
         root.expandedContainersChanged();
     }
@@ -150,6 +150,9 @@ PluginComponent {
                 font.pixelSize: Theme.fontSizeMedium
                 font.weight: Font.Bold
                 color: Theme.surfaceText
+                elide: Text.ElideRight
+                wrapMode: Text.NoWrap
+                width: parent.width
             }
 
             Row {
@@ -198,6 +201,7 @@ PluginComponent {
     component ContainerHeader: StyledRect {
         id: containerHeader
         property var containerData: null
+        property bool useComposeServiceName: false
         property bool isExpanded: false
         property real leftIndent: Theme.spacingM
         property real iconSize: Theme.iconSize
@@ -236,10 +240,13 @@ PluginComponent {
             spacing: 2
 
             StyledText {
-                text: containerData?.composeService || containerData?.name || ""
+                text: (useComposeServiceName && containerData?.composeService ? containerData?.composeService : containerData?.name) || ""
                 font.pixelSize: containerHeader.itemHeight >= 48 ? Theme.fontSizeMedium : Theme.fontSizeSmall
                 font.weight: Font.Medium
                 color: Theme.surfaceText
+                elide: Text.ElideRight
+                wrapMode: Text.NoWrap
+                width: parent.width
             }
 
             StyledText {
@@ -404,12 +411,12 @@ PluginComponent {
                     width: containerList.width - containerList.leftMargin - containerList.rightMargin
                     spacing: 0
 
-                    property bool isExpanded: root.expandedContainers[modelData.name] || false
+                    property bool isExpanded: root.expandedContainers[modelData.id] || false
 
                     ContainerHeader {
                         containerData: modelData
                         isExpanded: containerDelegate.isExpanded
-                        onClicked: root.toggleContainer(modelData.name)
+                        onClicked: root.toggleContainer(modelData.id)
                     }
 
                     ContainerActions {
@@ -512,6 +519,7 @@ PluginComponent {
                                 ContainerHeader {
                                     containerData: container
                                     isExpanded: serviceDelegate.isExpanded
+                                    useComposeServiceName: true
                                     leftIndent: Theme.spacingL
                                     iconSize: Theme.iconSize - 2
                                     itemHeight: 38
