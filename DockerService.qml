@@ -48,7 +48,7 @@ Item {
     function fetchContainers() {
         Proc.runCommand(
             "dockerManager.dockerPs",
-            ["docker", "ps", "-a", "--format", "{{ json . }}"],
+            ["docker", "container", "ls", "-a", "--format", "{{ json . }}"],
             (stdout, exitCode) => {
                 if (exitCode === 0) {
                     const lines = stdout.trim().split("\n").filter(line => line.length > 0);
