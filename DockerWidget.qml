@@ -1,6 +1,4 @@
 import QtQuick
-import Quickshell
-import Quickshell.Io
 import qs.Common
 import qs.Services
 import qs.Widgets
@@ -94,8 +92,10 @@ PluginComponent {
         name: "docker"
         size: Theme.barIconSize(root.barThickness, -4)
         color: {
-            if (!globalDockerAvailable.value) return Theme.error;
-            if (globalRunningContainers.value > 0) return Theme.primary;
+            if (!globalDockerAvailable.value)
+                return Theme.error;
+            if (globalRunningContainers.value > 0)
+                return Theme.primary;
             return Theme.surfaceText;
         }
     }
@@ -114,7 +114,7 @@ PluginComponent {
         property int totalCount: 0
         property int serviceCount: 0
         property bool isExpanded: false
-        signal clicked()
+        signal clicked
 
         width: parent.width
         height: 52
@@ -126,8 +126,10 @@ PluginComponent {
             name: "account_tree"
             size: Theme.iconSize + 2
             color: {
-                if (projectHeader.runningCount === projectHeader.totalCount && projectHeader.totalCount > 0) return Theme.primary;
-                if (projectHeader.runningCount > 0) return Theme.warning;
+                if (projectHeader.runningCount === projectHeader.totalCount && projectHeader.totalCount > 0)
+                    return Theme.primary;
+                if (projectHeader.runningCount > 0)
+                    return Theme.warning;
                 return Theme.surfaceText;
             }
             anchors.left: parent.left
@@ -202,7 +204,7 @@ PluginComponent {
         property real itemHeight: 48
         property color defaultColor: Theme.surfaceContainerHigh
         property color hoverColor: Theme.surfaceContainerHighest
-        signal clicked()
+        signal clicked
 
         width: parent.width
         height: itemHeight
@@ -214,8 +216,10 @@ PluginComponent {
             name: "deployed_code"
             size: containerHeader.iconSize
             color: {
-                if (containerData?.isRunning) return Theme.primary;
-                if (containerData?.isPaused) return Theme.warning;
+                if (containerData?.isRunning)
+                    return Theme.primary;
+                if (containerData?.isPaused)
+                    return Theme.warning;
                 return Theme.surfaceText;
             }
             anchors.left: parent.left
@@ -335,7 +339,7 @@ PluginComponent {
             anchors.horizontalCenter: parent.horizontalCenter
         }
     }
-    
+
     popoutContent: Component {
         Column {
             id: popoutColumn
@@ -396,25 +400,25 @@ PluginComponent {
                 model: globalContainers.value
 
                 delegate: Column {
-                        id: containerDelegate
-                        width: containerList.width - containerList.leftMargin - containerList.rightMargin
-                        spacing: 0
+                    id: containerDelegate
+                    width: containerList.width - containerList.leftMargin - containerList.rightMargin
+                    spacing: 0
 
-                        property bool isExpanded: root.expandedContainers[modelData.name] || false
+                    property bool isExpanded: root.expandedContainers[modelData.name] || false
 
-                        ContainerHeader {
-                            containerData: modelData
-                            isExpanded: containerDelegate.isExpanded
-                            onClicked: root.toggleContainer(modelData.name)
-                        }
+                    ContainerHeader {
+                        containerData: modelData
+                        isExpanded: containerDelegate.isExpanded
+                        onClicked: root.toggleContainer(modelData.name)
+                    }
 
-                        ContainerActions {
-                            containerData: modelData
-                            leftIndent: Theme.spacingL + Theme.spacingM
-                            visible: containerDelegate.isExpanded
-                        }
+                    ContainerActions {
+                        containerData: modelData
+                        leftIndent: Theme.spacingL + Theme.spacingM
+                        visible: containerDelegate.isExpanded
                     }
                 }
+            }
 
             DankListView {
                 id: projectList
@@ -526,78 +530,78 @@ PluginComponent {
                     }
                 }
             }
+        }
+    }
 
-            component ViewToggleButton: Rectangle {
-                property string iconName: ""
-                property bool isActive: false
-                signal clicked()
+    component ViewToggleButton: Rectangle {
+        property string iconName: ""
+        property bool isActive: false
+        signal clicked
 
-                width: 36
-                height: 36
-                radius: Theme.cornerRadius
-                color: isActive ? Theme.primaryHover : mouseArea.containsMouse ? Theme.surfaceHover : "transparent"
+        width: 36
+        height: 36
+        radius: Theme.cornerRadius
+        color: isActive ? Theme.primaryHover : mouseArea.containsMouse ? Theme.surfaceHover : "transparent"
 
-                DankIcon {
-                    anchors.centerIn: parent
-                    name: iconName
-                    size: 18
-                    color: isActive ? Theme.primary : Theme.surfaceText
-                }
+        DankIcon {
+            anchors.centerIn: parent
+            name: iconName
+            size: 18
+            color: isActive ? Theme.primary : Theme.surfaceText
+        }
 
-                MouseArea {
-                    id: mouseArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: parent.clicked()
-                }
+        MouseArea {
+            id: mouseArea
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: parent.clicked()
+        }
+    }
+
+    component ActionButton: Rectangle {
+        id: actionButton
+        property string text: ""
+        property string icon: ""
+        property bool enabled: true
+        property real leftIndent: Theme.spacingL + Theme.spacingM
+        signal triggered
+
+        width: parent.width
+        height: 44
+        radius: 0
+        color: actionMouse.containsMouse ? Theme.surfaceContainerHighest : "transparent"
+        border.width: 0
+        opacity: enabled ? 1.0 : 0.5
+
+        Row {
+            anchors.fill: parent
+            anchors.leftMargin: actionButton.leftIndent
+            spacing: Theme.spacingM
+
+            DankIcon {
+                name: actionButton.icon
+                size: Theme.iconSize
+                color: Theme.surfaceText
+                anchors.verticalCenter: parent.verticalCenter
             }
 
-            component ActionButton: Rectangle {
-                id: actionButton
-                property string text: ""
-                property string icon: ""
-                property bool enabled: true
-                property real leftIndent: Theme.spacingL + Theme.spacingM
-                signal triggered()
-
-                width: parent.width
-                height: 44
-                radius: 0
-                color: actionMouse.containsMouse ? Theme.surfaceContainerHighest : "transparent"
-                border.width: 0
-                opacity: enabled ? 1.0 : 0.5
-
-                Row {
-                    anchors.fill: parent
-                    anchors.leftMargin: actionButton.leftIndent
-                    spacing: Theme.spacingM
-
-                    DankIcon {
-                        name: actionButton.icon
-                        size: Theme.iconSize
-                        color: Theme.surfaceText
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    StyledText {
-                        text: actionButton.text
-                        font.pixelSize: Theme.fontSizeMedium
-                        font.weight: Font.Normal
-                        color: Theme.surfaceText
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                }
-
-                MouseArea {
-                    id: actionMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: actionButton.enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
-                    enabled: actionButton.enabled
-                    onClicked: actionButton.triggered()
-                }
+            StyledText {
+                text: actionButton.text
+                font.pixelSize: Theme.fontSizeMedium
+                font.weight: Font.Normal
+                color: Theme.surfaceText
+                anchors.verticalCenter: parent.verticalCenter
             }
+        }
+
+        MouseArea {
+            id: actionMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: actionButton.enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+            enabled: actionButton.enabled
+            onClicked: actionButton.triggered()
         }
     }
 
