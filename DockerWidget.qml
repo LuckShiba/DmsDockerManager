@@ -244,7 +244,7 @@ PluginComponent {
 
             StyledText {
                 text: containerData?.image || ""
-                font.pixelSize: containerHeader.itemHeight >= 48 ? Theme.fontSizeSmall : Theme.fontSizeXS
+                font.pixelSize: Theme.fontSizeSmall
                 color: Theme.surfaceVariantText
                 elide: Text.ElideRight
                 width: parent.width
