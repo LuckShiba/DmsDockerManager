@@ -1,25 +1,25 @@
+pragma Singleton
+
 import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Services
 
-Item {
+Singleton {
     id: root
 
     property bool systemdRunAvailable: false
     property int debounceDelay: 300
 
-    Timer {
-        id: debounceTimer
+    property var debounceTimer: Timer {
         interval: root.debounceDelay
         running: false
         repeat: false
         onTriggered: fetchContainers()
     }
 
-    Process {
-        id: eventsProcess
+    property var eventsProcess: Process {
         command: ["docker", "events", "--format", "json", "--filter", "type=container"]
         running: false
 
@@ -40,15 +40,14 @@ Item {
         }
 
         onRunningChanged: {
-            if (!running && root.visible) {
+            if (!running) {
                 console.warn("DockerManager: Docker events process stopped");
                 restartTimer.start();
             }
         }
     }
 
-    Timer {
-        id: restartTimer
+    property var restartTimer: Timer {
         interval: 5000
         running: false
         repeat: false
@@ -66,10 +65,6 @@ Item {
         refresh();
 
         eventsProcess.running = true;
-    }
-
-    Component.onDestruction: {
-        eventsProcess.running = false;
     }
 
     function refresh() {

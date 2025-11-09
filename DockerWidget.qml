@@ -14,6 +14,19 @@ PluginComponent {
     property string shellPath: pluginData.shellPath || "/bin/sh"
     property bool groupByCompose: pluginData.groupByCompose || false
 
+    Component.onCompleted: {
+        DockerService.debounceDelay = root.debounceDelay;
+    }
+
+    Connections {
+        target: pluginService
+        function onPluginDataChanged(pluginId) {
+            if (pluginId === "dockerManager") {
+                DockerService.debounceDelay = root.debounceDelay;
+            }
+        }
+    }
+
     PluginGlobalVar {
         id: globalDockerAvailable
         varName: "dockerAvailable"
@@ -44,11 +57,6 @@ PluginComponent {
         }
     }
 
-    DockerService {
-        id: dockerService
-        debounceDelay: root.debounceDelay
-    }
-
     function toggleContainer(containerId) {
         let expanded = root.expandedContainers;
         expanded[containerId] = !expanded[containerId];
@@ -69,23 +77,23 @@ PluginComponent {
     }
 
     function executeAction(containerId, action) {
-        if (dockerService.executeAction(containerId, action)) {
+        if (DockerService.executeAction(containerId, action)) {
             ToastService.showInfo("Executing " + action + " on container");
         }
     }
 
     function executeComposeAction(workingDir, configFile, action) {
-        if (dockerService.executeComposeAction(workingDir, configFile, action, root.terminalApp)) {
+        if (DockerService.executeComposeAction(workingDir, configFile, action, root.terminalApp)) {
             ToastService.showInfo("Executing " + action + " on project");
         }
     }
 
     function openLogs(containerId) {
-        dockerService.openLogs(containerId, root.terminalApp);
+        DockerService.openLogs(containerId, root.terminalApp);
     }
 
     function openExec(containerId) {
-        dockerService.openExec(containerId, root.terminalApp, root.shellPath);
+        DockerService.openExec(containerId, root.terminalApp, root.shellPath);
     }
 
     component DockerIcon: DankNFIcon {
