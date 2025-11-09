@@ -10,7 +10,6 @@
     "icon": "dns",
     "settings": "./DockerSettings.qml",
     "requires_dms": ">=0.3.0",
-    "requires": ["docker"],
     "permissions": [
         "settings_read",
         "settings_write",
