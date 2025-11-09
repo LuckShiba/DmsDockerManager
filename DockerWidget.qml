@@ -220,10 +220,10 @@ PluginComponent {
             name: "deployed_code"
             size: containerHeader.iconSize
             color: {
-                if (containerData?.isRunning)
-                    return Theme.primary;
                 if (containerData?.isPaused)
                     return Theme.warning;
+                if (containerData?.isRunning)
+                    return Theme.primary;
                 return Theme.surfaceText;
             }
             anchors.left: parent.left
