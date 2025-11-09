@@ -136,6 +136,9 @@ Item {
                         try {
                             const labels = container.Config?.Labels || {};
                             const state = container.State?.Status || "";
+                            const startedAt = new Date(container.State?.StartedAt || 0).getTime();
+                            const finishedAt = new Date(container.State?.FinishedAt || 0).getTime();
+                            const lastActivity = Math.max(startedAt, finishedAt);
 
                             return {
                                 id: container.Id || "",
@@ -146,6 +149,7 @@ Item {
                                 isRunning: container.State?.Running || false,
                                 isPaused: container.State?.Paused || false,
                                 created: container.Created || "",
+                                lastActivity: lastActivity,
                                 composeProject: labels["com.docker.compose.project"] || labels["io.podman.compose.project"] || "",
                                 composeService: labels["com.docker.compose.service"] || labels["io.podman.compose.service"] || "",
                                 composeWorkingDir: labels["com.docker.compose.project.working_dir"] || "",
@@ -165,6 +169,8 @@ Item {
                         const bPriority = priority[b.state] || priority.default;
                         if (aPriority !== bPriority)
                             return aPriority - bPriority;
+                        if (a.lastActivity !== b.lastActivity)
+                            return b.lastActivity - a.lastActivity;
                         return a.name.localeCompare(b.name);
                     });
 
