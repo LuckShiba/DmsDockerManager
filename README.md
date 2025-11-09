@@ -3,6 +3,7 @@
 ![Preview of the plugin](./assets/screenshot.png)
 
 Docker container monitoring and management plugin for [DankMaterialShell](https://danklinux.com/)
+
 Inspired by GNOME extension [Easy Docker Containers](https://extensions.gnome.org/extension/2224/easy-docker-containers/)
 
 ## Features
@@ -14,7 +15,7 @@ Inspired by GNOME extension [Easy Docker Containers](https://extensions.gnome.or
 - Terminal access to running containers
 - Container log viewing
 - Podman support with customizable docker binary
-- Auto-refresh with configurable interval
+- Auto-refresh using `docker events`
 
 ## Installation
 
@@ -55,6 +56,7 @@ git clone https://github.com/LuckShiba/DmsDockerManager ~/.config/DankMaterialSh
 Settings available in plugin settings:
 
 - **Docker Binary**: Path to docker or podman binary (default: `docker`)
+- **Debounce Delay** The delay before refreshing the container list after receiving Docker Events (default: `300ms`)
 - **Terminal Application**: Command for terminal windows (default: `alacritty --hold`)
 - **Shell Path**: Shell for container exec (default: `/bin/sh`)
 
