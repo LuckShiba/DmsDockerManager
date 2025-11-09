@@ -24,14 +24,14 @@ PluginSettings {
     }
 
     SliderSetting {
-        settingKey: "refreshInterval"
-        label: "Refresh Interval"
-        description: "How often to check Docker container status."
-        defaultValue: 5000
-        minimum: 1000
-        maximum: 30000
+        settingKey: "debounceDelay"
+        label: "Debounce Delay"
+        description: "Delay before refreshing container list after Docker events (prevents excessive updates during rapid changes)."
+        defaultValue: 300
+        minimum: 100
+        maximum: 2000
         unit: "ms"
-        leftIcon: "refresh"
+        leftIcon: "schedule"
     }
 
     StringSetting {

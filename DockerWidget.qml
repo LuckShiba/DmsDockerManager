@@ -9,7 +9,7 @@ PluginComponent {
 
     property var expandedContainers: ({})
     property var expandedProjects: ({})
-    property int refreshInterval: pluginData.refreshInterval || 5000
+    property int debounceDelay: pluginData.debounceDelay || 300
     property string terminalApp: pluginData.terminalApp || "alacritty --hold"
     property string shellPath: pluginData.shellPath || "/bin/sh"
     property bool groupByCompose: pluginData.groupByCompose || false
@@ -46,7 +46,7 @@ PluginComponent {
 
     DockerService {
         id: dockerService
-        refreshInterval: root.refreshInterval
+        debounceDelay: root.debounceDelay
     }
 
     function toggleContainer(containerId) {
