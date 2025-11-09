@@ -74,9 +74,9 @@ Item {
             onRead: data => {
                 try {
                     const event = JSON.parse(data);
-                    const action = event.Action || event.action || event.status;
+                    const action = event.Status || event.status;
 
-                    if (["start", "stop", "die", "kill", "restart", "pause", "unpause", "create", "destroy", "remove"].includes(action)) {
+                    if (["start", "stop", "die", "died", "kill", "restart", "pause", "unpause", "create", "destroy", "remove", "cleanup"].includes(action)) {
                         console.log(`DockerManager: Container event detected - ${action}`);
                         debounceTimer.restart();
                     }
