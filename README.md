@@ -7,9 +7,11 @@ Inspired by GNOME extension [Easy Docker Containers](https://extensions.gnome.or
 
 - Bar widget displaying Docker status with running container count
 - Expandable popout showing all containers
+- Docker Compose view for managing compose projects
 - Container management: start, stop, restart, pause, unpause
 - Terminal access to running containers
 - Container log viewing
+- Podman support with customizable docker binary
 - Auto-refresh with configurable interval
 
 ## Installation
@@ -50,7 +52,7 @@ git clone https://github.com/LuckShiba/DmsDockerManager ~/.config/DankMaterialSh
 
 Settings available in plugin settings:
 
-- **Refresh Interval**: Container status check frequency (1-30 seconds, default: 5s)
+- **Docker Binary**: Path to docker or podman binary (default: `docker`)
 - **Terminal Application**: Command for terminal windows (default: `alacritty --hold`)
 - **Shell Path**: Shell for container exec (default: `/bin/sh`)
 
@@ -66,3 +68,5 @@ Click widget to open container list. Expand containers to access actions:
 - Stop containers
 - Open interactive shell
 - View logs
+
+If you have a Docker Compose project, you can select in the widget to manage the Compose projects instead, using the selector on the top-right.
