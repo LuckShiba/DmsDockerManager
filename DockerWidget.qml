@@ -9,22 +9,11 @@ PluginComponent {
 
     property var expandedContainers: ({})
     property var expandedProjects: ({})
-    property int debounceDelay: pluginData.debounceDelay || 300
-    property string terminalApp: pluginData.terminalApp || "alacritty --hold"
-    property string shellPath: pluginData.shellPath || "/bin/sh"
     property bool groupByCompose: pluginData.groupByCompose || false
 
     Component.onCompleted: {
-        DockerService.debounceDelay = root.debounceDelay;
-    }
-
-    Connections {
-        target: pluginService
-        function onPluginDataChanged(pluginId) {
-            if (pluginId === "dockerManager") {
-                DockerService.debounceDelay = root.debounceDelay;
-            }
-        }
+        // Note: the import of DockerService here is necessary because Singletons are lazy-loaded in QML.
+        console.log(DockerService.pluginId, "loaded.");
     }
 
     PluginGlobalVar {
@@ -83,17 +72,17 @@ PluginComponent {
     }
 
     function executeComposeAction(workingDir, configFile, action) {
-        if (DockerService.executeComposeAction(workingDir, configFile, action, root.terminalApp)) {
+        if (DockerService.executeComposeAction(workingDir, configFile, action)) {
             ToastService.showInfo("Executing " + action + " on project");
         }
     }
 
     function openLogs(containerId) {
-        DockerService.openLogs(containerId, root.terminalApp);
+        DockerService.openLogs(containerId);
     }
 
     function openExec(containerId) {
-        DockerService.openExec(containerId, root.terminalApp, root.shellPath);
+        DockerService.openExec(containerId);
     }
 
     component DockerIcon: DankNFIcon {

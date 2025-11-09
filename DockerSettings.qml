@@ -5,7 +5,7 @@ import qs.Modules.Plugins
 
 PluginSettings {
     id: root
-    pluginId: "dockerManager"
+    pluginId: DockerService.pluginId
 
     StyledText {
         width: parent.width
@@ -23,11 +23,19 @@ PluginSettings {
         wrapMode: Text.WordWrap
     }
 
+    StringSetting {
+        settingKey: "dockerBinary"
+        label: "Container Runtime Binary"
+        description: "Path or name of the container runtime binary to use (e.g., 'docker' or 'podman')."
+        defaultValue: DockerService.defaults.dockerBinary
+        placeholder: DockerService.defaults.dockerBinary
+    }
+
     SliderSetting {
         settingKey: "debounceDelay"
         label: "Debounce Delay"
         description: "Delay before refreshing container list after Docker events (prevents excessive updates during rapid changes)."
-        defaultValue: 300
+        defaultValue: DockerService.defaults.debounceDelay
         minimum: 100
         maximum: 2000
         unit: "ms"
@@ -38,15 +46,15 @@ PluginSettings {
         settingKey: "terminalApp"
         label: "Terminal Application"
         description: "Command used to launch terminal windows for exec and logs."
-        defaultValue: "alacritty --hold"
-        placeholder: "alacritty --hold"
+        defaultValue: DockerService.defaults.terminalApp
+        placeholder: DockerService.defaults.terminalApp
     }
 
     StringSetting {
         settingKey: "shellPath"
         label: "Shell Path"
         description: "Shell to use when executing commands in containers (note: many containers will only have /bin/sh installed.)"
-        defaultValue: "/bin/sh"
-        placeholder: "/bin/sh"
+        defaultValue: DockerService.defaults.shellPath
+        placeholder: DockerService.defaults.shellPath
     }
 }

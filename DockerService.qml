@@ -6,11 +6,58 @@ import Quickshell.Io
 import qs.Common
 import qs.Services
 
-Singleton {
+Item {
     id: root
 
+    readonly property var defaults: ({
+            debounceDelay: 300,
+            dockerBinary: "docker",
+            terminalApp: "alacritty --hold",
+            shellPath: "/bin/sh"
+        })
+
+    readonly property string pluginId: "dockerManager"
+
     property bool systemdRunAvailable: false
-    property int debounceDelay: 300
+    property bool dockerAvailable: false
+    property int debounceDelay: defaults.debounceDelay
+    property string dockerBinary: defaults.dockerBinary
+    property string terminalApp: defaults.terminalApp
+    property string shellPath: defaults.shellPath
+
+    function loadSettings() {
+        const load = key => PluginService.loadPluginData(pluginId, key) || defaults[key];
+        debounceDelay = load("debounceDelay");
+        dockerBinary = load("dockerBinary");
+        terminalApp = load("terminalApp");
+        shellPath = load("shellPath");
+
+        refresh();
+    }
+
+    Component.onCompleted: {
+        loadSettings();
+        initialize();
+    }
+
+    Connections {
+        target: PluginService
+        function onPluginDataChanged(pluginId) {
+            if (pluginId === root.pluginId) {
+                loadSettings();
+            }
+        }
+    }
+
+    function getDockerEventCommand() {
+        return [dockerBinary, "events", "--format", "json", "--filter", "type=container"];
+    }
+
+    onDockerBinaryChanged: {
+        eventsProcess.running = false;
+        eventsProcess.command = getDockerEventCommand();
+        eventsProcess.running = true;
+    }
 
     property var debounceTimer: Timer {
         interval: root.debounceDelay
@@ -20,7 +67,7 @@ Singleton {
     }
 
     property var eventsProcess: Process {
-        command: ["docker", "events", "--format", "json", "--filter", "type=container"]
+        command: getDockerEventCommand()
         running: false
 
         stdout: SplitParser {
@@ -41,7 +88,7 @@ Singleton {
 
         onRunningChanged: {
             if (!running) {
-                console.warn("DockerManager: Docker events process stopped");
+                console.log("DockerManager: Docker events process not running");
                 restartTimer.start();
             }
         }
@@ -52,13 +99,15 @@ Singleton {
         running: false
         repeat: false
         onTriggered: {
-            console.log("DockerManager: Attempting to restart events listener...");
-            eventsProcess.running = true;
+            if (dockerAvailable) {
+                console.log("DockerManager: Attempting to restart events listener...");
+                eventsProcess.running = true;
+            }
         }
     }
 
-    Component.onCompleted: {
-        Proc.runCommand("dockerManager.systemdRunCheck", ["which", "systemd-run"], (stdout, exitCode) => {
+    function initialize() {
+        Proc.runCommand(`${pluginId}.systemdRunCheck`, ["which", "systemd-run"], (stdout, exitCode) => {
             systemdRunAvailable = exitCode === 0;
         }, 100);
 
@@ -68,10 +117,10 @@ Singleton {
     }
 
     function refresh() {
-        Proc.runCommand("dockerManager.dockerCheck", ["docker", "info"], (stdout, exitCode) => {
-            const success = exitCode === 0;
-            PluginService.setGlobalVar("dockerManager", "dockerAvailable", success);
-            if (success) {
+        Proc.runCommand(`${pluginId}.dockerCheck`, [dockerBinary, "info"], (stdout, exitCode) => {
+            root.dockerAvailable = exitCode === 0;
+            PluginService.setGlobalVar("dockerManager", "dockerAvailable", dockerAvailable);
+            if (dockerAvailable) {
                 fetchContainers();
             } else {
                 updateContainers();
@@ -80,7 +129,7 @@ Singleton {
     }
 
     function fetchContainers() {
-        Proc.runCommand("dockerManager.dockerInspect", ["sh", "-c", "docker container inspect $(docker container ls -aq)"], (stdout, exitCode) => {
+        Proc.runCommand(`${pluginId}.dockerInspect`, ["sh", "-c", `${dockerBinary} container inspect $(${dockerBinary} container ls -aq)`], (stdout, exitCode) => {
             if (exitCode === 0) {
                 try {
                     const containers = JSON.parse(stdout).map(container => {
@@ -156,18 +205,18 @@ Singleton {
     }
 
     function updateContainers(containers = [], runningContainers = 0, composeProjects = []) {
-        PluginService.setGlobalVar("dockerManager", "containers", containers);
-        PluginService.setGlobalVar("dockerManager", "runningContainers", runningContainers);
-        PluginService.setGlobalVar("dockerManager", "composeProjects", composeProjects);
+        PluginService.setGlobalVar(pluginId, "containers", containers);
+        PluginService.setGlobalVar(pluginId, "runningContainers", runningContainers);
+        PluginService.setGlobalVar(pluginId, "composeProjects", composeProjects);
     }
 
     function executeAction(containerId, action) {
         const commands = {
-            start: ["docker", "start", containerId],
-            stop: ["docker", "stop", containerId],
-            restart: ["docker", "restart", containerId],
-            pause: ["docker", "pause", containerId],
-            unpause: ["docker", "unpause", containerId]
+            start: [dockerBinary, "start", containerId],
+            stop: [dockerBinary, "stop", containerId],
+            restart: [dockerBinary, "restart", containerId],
+            pause: [dockerBinary, "pause", containerId],
+            unpause: [dockerBinary, "unpause", containerId]
         };
 
         if (commands[action]) {
@@ -181,25 +230,25 @@ Singleton {
         return false;
     }
 
-    function executeComposeAction(workingDir, configFile, action, terminal) {
+    function executeComposeAction(workingDir, configFile, action) {
         if (!workingDir) {
             console.error("DockerManager: Cannot execute compose action without working directory");
             return false;
         }
 
         const composeCommands = {
-            up: ["docker", "compose", "-f", configFile, "up", "-d"],
-            down: ["docker", "compose", "-f", configFile, "down"],
-            restart: ["docker", "compose", "-f", configFile, "restart"],
-            stop: ["docker", "compose", "-f", configFile, "stop"],
-            start: ["docker", "compose", "-f", configFile, "start"],
-            pull: ["docker", "compose", "-f", configFile, "pull"],
+            up: [dockerBinary, "compose", "-f", configFile, "up", "-d"],
+            down: [dockerBinary, "compose", "-f", configFile, "down"],
+            restart: [dockerBinary, "compose", "-f", configFile, "restart"],
+            stop: [dockerBinary, "compose", "-f", configFile, "stop"],
+            start: [dockerBinary, "compose", "-f", configFile, "start"],
+            pull: [dockerBinary, "compose", "-f", configFile, "pull"],
             logs: null
         };
 
         if (action === "logs") {
-            const cmd = `cd "${workingDir}" && docker compose -f ${configFile} logs -f`;
-            Quickshell.execDetached(["sh", "-c", `${terminal} -e sh -c '${cmd}'`]);
+            const cmd = `cd "${workingDir}" && ${dockerBinary} compose -f ${configFile} logs -f`;
+            Quickshell.execDetached(["sh", "-c", `${terminalApp} -e sh -c '${cmd}'`]);
             return true;
         }
 
@@ -215,11 +264,11 @@ Singleton {
         return false;
     }
 
-    function openLogs(containerId, terminal) {
-        Quickshell.execDetached(["sh", "-c", terminal + " -e docker logs -f " + containerId]);
+    function openLogs(containerId) {
+        Quickshell.execDetached(["sh", "-c", terminalApp + " -e " + dockerBinary + " logs -f " + containerId]);
     }
 
-    function openExec(containerId, terminal, shell) {
-        Quickshell.execDetached(["sh", "-c", terminal + " -e docker exec -it " + containerId + " " + shell]);
+    function openExec(containerId) {
+        Quickshell.execDetached(["sh", "-c", terminalApp + " -e " + dockerBinary + " exec -it " + containerId + " " + shellPath]);
     }
 }
