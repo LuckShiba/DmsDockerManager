@@ -1,5 +1,7 @@
 # DMS Docker Manager
 
+![Preview of the plugin](./assets/screenshot.png)
+
 Docker container monitoring and management plugin for [DankMaterialShell](https://danklinux.com/)
 Inspired by GNOME extension [Easy Docker Containers](https://extensions.gnome.org/extension/2224/easy-docker-containers/)
 
