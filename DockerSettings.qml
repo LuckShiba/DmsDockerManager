@@ -57,4 +57,11 @@ PluginSettings {
         defaultValue: DockerService.defaults.shellPath
         placeholder: DockerService.defaults.shellPath
     }
+
+    ToggleSetting {
+        settingKey: "showPorts"
+        label: "Show Port Mappings"
+        description: "Display container port mappings when expanding containers in the widget."
+        defaultValue: true
+    }
 }

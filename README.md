@@ -14,6 +14,7 @@ Inspired by GNOME extension [Easy Docker Containers](https://extensions.gnome.or
 - Container management: start, stop, restart, pause, unpause
 - Terminal access to running containers
 - Container log viewing
+- `Port mapping display
 - Podman support with customizable docker binary
 - Auto-refresh using `docker events`
 
@@ -53,9 +54,10 @@ git clone https://github.com/LuckShiba/DmsDockerManager ~/.config/DankMaterialSh
 Settings available in plugin settings:
 
 - **Docker Binary**: Path to docker or podman binary (default: `docker`)
-- **Debounce Delay** The delay before refreshing the container list after receiving Docker Events (default: `300ms`)
+- **Debounce Delay**: The delay before refreshing the container list after receiving Docker Events (default: `300ms`)
 - **Terminal Application**: Command for terminal windows (default: `alacritty --hold`)
 - **Shell Path**: Shell for container exec (default: `/bin/sh`)
+- **Show Port Mappings**: Toggle display of container port mappings when expanding containers (default: `true`)
 
 ## Usage
 

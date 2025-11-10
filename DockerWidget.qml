@@ -10,6 +10,7 @@ PluginComponent {
     property var expandedContainers: ({})
     property var expandedProjects: ({})
     property bool groupByCompose: pluginData.groupByCompose || false
+    property bool showPorts: pluginData.showPorts !== undefined ? pluginData.showPorts : true
 
     Component.onCompleted: {
         // Note: the import of DockerService here is necessary because Singletons are lazy-loaded in QML.
@@ -202,18 +203,26 @@ PluginComponent {
         property bool isExpanded: false
         property real leftIndent: Theme.spacingM
         property real iconSize: Theme.iconSize
-        property real itemHeight: 48
+        property real baseHeight: 48
         property color defaultColor: Theme.surfaceContainerHigh
         property color hoverColor: Theme.surfaceContainerHighest
         signal clicked
 
         width: parent.width
-        height: itemHeight
+        height: baseHeight + (isExpanded && root.showPorts && containerData?.ports?.length > 0 ? Theme.spacingS + portFlow.height + Theme.spacingXS : 0)
         radius: Theme.cornerRadius
         color: headerMouse.containsMouse ? hoverColor : defaultColor
         border.width: 0
 
+        Behavior on height {
+            NumberAnimation {
+                duration: Theme.expressiveDurations["expressiveFastSpatial"]
+                easing.type: Theme.standardEasing
+            }
+        }
+
         DankIcon {
+            id: containerIcon
             name: "deployed_code"
             size: containerHeader.iconSize
             color: {
@@ -225,20 +234,23 @@ PluginComponent {
             }
             anchors.left: parent.left
             anchors.leftMargin: containerHeader.leftIndent
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.top: parent.top
+            anchors.topMargin: (containerHeader.baseHeight - containerIcon.height) / 2
         }
 
         Column {
+            id: headerTextColumn
             anchors.left: parent.left
             anchors.leftMargin: containerHeader.leftIndent + containerHeader.iconSize + Theme.spacingM
-            anchors.right: parent.right
-            anchors.rightMargin: containerHeader.leftIndent + containerHeader.iconSize
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.right: expandIcon.left
+            anchors.rightMargin: Theme.spacingM
+            anchors.top: parent.top
+            anchors.topMargin: (containerHeader.baseHeight - headerTextColumn.height) / 2
             spacing: 2
 
             StyledText {
                 text: (useComposeServiceName && containerData?.composeService ? containerData?.composeService : containerData?.name) || ""
-                font.pixelSize: containerHeader.itemHeight >= 48 ? Theme.fontSizeMedium : Theme.fontSizeSmall
+                font.pixelSize: containerHeader.baseHeight >= 48 ? Theme.fontSizeMedium : Theme.fontSizeSmall
                 font.weight: Font.Medium
                 color: Theme.surfaceText
                 elide: Text.ElideRight
@@ -255,13 +267,90 @@ PluginComponent {
             }
         }
 
+        Flow {
+            id: portFlow
+            anchors.left: parent.left
+            anchors.leftMargin: containerHeader.leftIndent
+            anchors.right: parent.right
+            anchors.rightMargin: containerHeader.leftIndent
+            anchors.top: headerTextColumn.bottom
+            anchors.topMargin: Theme.spacingS
+            spacing: Theme.spacingXS
+            visible: isExpanded && root.showPorts && containerData?.ports?.length > 0
+            opacity: isExpanded && root.showPorts && containerData?.ports?.length > 0 ? 1 : 0
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Theme.expressiveDurations["expressiveEffects"]
+                    easing.type: Theme.standardEasing
+                }
+            }
+
+            Repeater {
+                model: containerData?.ports || []
+
+                StyledRect {
+                    height: 24
+                    width: portContent.width + Theme.spacingM
+                    radius: 12
+                    color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
+                    border.width: 1
+                    border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.3)
+
+                    Row {
+                        id: portContent
+                        anchors.centerIn: parent
+                        spacing: Theme.spacingXS
+
+                        DankIcon {
+                            name: "cloud"
+                            size: 13
+                            color: Theme.primary
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        StyledText {
+                            text: modelData.hostPort
+                            font.pixelSize: Theme.fontSizeSmall
+                            font.weight: Font.Medium
+                            color: Theme.primary
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        StyledText {
+                            text: "→"
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.6)
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        DankIcon {
+                            name: "deployed_code"
+                            size: 13
+                            color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.8)
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        StyledText {
+                            text: modelData.containerPort.replace("/tcp", "").replace("/udp", "")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.8)
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                }
+            }
+        }
+
         DankIcon {
+            id: expandIcon
             name: isExpanded ? "expand_less" : "expand_more"
             size: containerHeader.iconSize
             color: Theme.surfaceText
             anchors.right: parent.right
             anchors.rightMargin: containerHeader.leftIndent
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.top: parent.top
+            anchors.topMargin: (containerHeader.baseHeight - expandIcon.height) / 2
         }
 
         MouseArea {
@@ -276,84 +365,72 @@ PluginComponent {
     component ContainerActions: Column {
         property var containerData: null
         property real leftIndent: Theme.spacingL
+        property bool isExpanded: false
 
         width: parent.width
         spacing: 0
+        clip: true
 
-        Rectangle {
-            width: parent.width
-            height: containerData?.ports?.length > 0 ? portFlow.height + Theme.spacingM * 2 : 0
-            color: "transparent"
-            visible: containerData?.ports?.length > 0
+        height: isExpanded ? actionsColumn.height : 0
+        opacity: isExpanded ? 1 : 0
 
-            Flow {
-                id: portFlow
-                anchors.left: parent.left
-                anchors.leftMargin: parent.leftIndent + Theme.iconSize + Theme.spacingM
-                anchors.right: parent.right
-                anchors.rightMargin: parent.leftIndent
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: Theme.spacingXS
-
-                Repeater {
-                    model: containerData?.ports || []
-
-                    Rectangle {
-                        height: 24
-                        width: portLabel.width + Theme.spacingS * 2
-                        radius: 6
-                        color: Theme.primary
-
-                        StyledText {
-                            id: portLabel
-                            anchors.centerIn: parent
-                            text: modelData.hostPort + " → " + modelData.containerPort.replace("/tcp", "").replace("/udp", "")
-                            font.pixelSize: Theme.fontSizeSmall
-                            font.weight: Font.Medium
-                            color: Theme.surface
-                        }
-                    }
-                }
+        Behavior on height {
+            NumberAnimation {
+                duration: Theme.expressiveDurations["expressiveFastSpatial"]
+                easing.type: Theme.standardEasing
             }
         }
 
-        ActionButton {
-            text: containerData?.isRunning ? "Restart" : "Start"
-            icon: containerData?.isRunning ? "refresh" : "play_arrow"
-            enabled: !containerData?.isPaused
-            leftIndent: parent.leftIndent
-            onTriggered: root.executeAction(containerData.id, containerData.isRunning ? "restart" : "start")
+        Behavior on opacity {
+            NumberAnimation {
+                duration: Theme.expressiveDurations["expressiveEffects"]
+                easing.type: Theme.standardEasing
+            }
         }
 
-        ActionButton {
-            text: containerData?.isPaused ? "Unpause" : "Pause"
-            icon: "pause"
-            enabled: containerData?.isRunning || containerData?.isPaused
-            leftIndent: parent.leftIndent
-            onTriggered: root.executeAction(containerData.id, containerData.isPaused ? "unpause" : "pause")
-        }
+        Column {
+            id: actionsColumn
+            width: parent.width
+            spacing: 0
 
-        ActionButton {
-            text: "Stop"
-            icon: "stop"
-            enabled: containerData?.isRunning || containerData?.isPaused
-            leftIndent: parent.leftIndent
-            onTriggered: root.executeAction(containerData.id, "stop")
-        }
+            ActionButton {
+                text: containerData?.isRunning ? "Restart" : "Start"
+                icon: containerData?.isRunning ? "refresh" : "play_arrow"
+                enabled: !containerData?.isPaused
+                leftIndent: parent.parent.leftIndent
+                onTriggered: root.executeAction(containerData.id, containerData.isRunning ? "restart" : "start")
+            }
 
-        ActionButton {
-            text: "Shell"
-            icon: "terminal"
-            enabled: containerData?.isRunning
-            leftIndent: parent.leftIndent
-            onTriggered: root.openExec(containerData.id)
-        }
+            ActionButton {
+                text: containerData?.isPaused ? "Unpause" : "Pause"
+                icon: "pause"
+                enabled: containerData?.isRunning || containerData?.isPaused
+                leftIndent: parent.parent.leftIndent
+                onTriggered: root.executeAction(containerData.id, containerData.isPaused ? "unpause" : "pause")
+            }
 
-        ActionButton {
-            text: "Logs"
-            icon: "description"
-            leftIndent: parent.leftIndent
-            onTriggered: root.openLogs(containerData.id)
+            ActionButton {
+                text: "Stop"
+                icon: "stop"
+                enabled: containerData?.isRunning || containerData?.isPaused
+                leftIndent: parent.parent.leftIndent
+                onTriggered: root.executeAction(containerData.id, "stop")
+            }
+
+            ActionButton {
+                text: "Shell"
+                icon: "terminal"
+                enabled: containerData?.isRunning
+                leftIndent: parent.parent.leftIndent
+                onTriggered: root.openExec(containerData.id)
+            }
+
+            ActionButton {
+                text: "Logs"
+                icon: "description"
+                leftIndent: parent.parent.leftIndent
+                onTriggered: root.openLogs(containerData.id)
+            }
         }
     }
 
@@ -456,7 +533,7 @@ PluginComponent {
                     ContainerActions {
                         containerData: modelData
                         leftIndent: Theme.spacingL + Theme.spacingM
-                        visible: containerDelegate.isExpanded
+                        isExpanded: containerDelegate.isExpanded
                     }
                 }
             }
@@ -491,81 +568,105 @@ PluginComponent {
                     }
 
                     Column {
+                        id: projectContent
                         width: parent.width
                         spacing: 2
-                        topPadding: isExpanded ? Theme.spacingXS : 0
-                        visible: isExpanded
+                        clip: true
+
+                        height: projectDelegate.isExpanded ? projectContentInner.height : 0
+                        opacity: projectDelegate.isExpanded ? 1 : 0
+
+                        Behavior on height {
+                            NumberAnimation {
+                                duration: Theme.expressiveDurations["expressiveFastSpatial"]
+                                easing.type: Theme.standardEasing
+                            }
+                        }
+
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: 200
+                                easing.type: Easing.OutCubic
+                            }
+                        }
 
                         Column {
-                            id: projectActionsColumn
+                            id: projectContentInner
                             width: parent.width
-                            spacing: 0
-
-                            ActionButton {
-                                text: "Start All"
-                                icon: "play_arrow"
-                                enabled: modelData.runningCount < modelData.totalCount
-                                leftIndent: Theme.spacingL
-                                onTriggered: root.executeComposeAction(modelData.workingDir, modelData.configFile, "start")
-                            }
-
-                            ActionButton {
-                                text: "Restart All"
-                                icon: "refresh"
-                                enabled: modelData.runningCount > 0
-                                leftIndent: Theme.spacingL
-                                onTriggered: root.executeComposeAction(modelData.workingDir, modelData.configFile, "restart")
-                            }
-
-                            ActionButton {
-                                text: "Stop All"
-                                icon: "stop"
-                                enabled: modelData.runningCount > 0
-                                leftIndent: Theme.spacingL
-                                onTriggered: root.executeComposeAction(modelData.workingDir, modelData.configFile, "stop")
-                            }
-
-                            ActionButton {
-                                text: "View Logs"
-                                icon: "description"
-                                leftIndent: Theme.spacingL
-                                onTriggered: root.executeComposeAction(modelData.workingDir, modelData.configFile, "logs")
-                            }
-                        }
-
-                        Rectangle {
-                            width: parent.width
-                            height: Theme.spacingXS
-                            color: "transparent"
-                        }
-
-                        Repeater {
-                            model: modelData.containers
+                            spacing: 2
+                            topPadding: Theme.spacingXS
 
                             Column {
-                                id: serviceDelegate
+                                id: projectActionsColumn
                                 width: parent.width
                                 spacing: 0
 
-                                property var container: modelData
-                                property bool isExpanded: root.expandedContainers[container.name] || false
-
-                                ContainerHeader {
-                                    containerData: container
-                                    isExpanded: serviceDelegate.isExpanded
-                                    useComposeServiceName: true
+                                ActionButton {
+                                    text: "Start All"
+                                    icon: "play_arrow"
+                                    enabled: modelData.runningCount < modelData.totalCount
                                     leftIndent: Theme.spacingL
-                                    iconSize: Theme.iconSize - 2
-                                    itemHeight: 38
-                                    defaultColor: Theme.surfaceContainer
-                                    hoverColor: Theme.surfaceContainerHigh
-                                    onClicked: root.toggleContainer(container.name)
+                                    onTriggered: root.executeComposeAction(modelData.workingDir, modelData.configFile, "start")
                                 }
 
-                                ContainerActions {
-                                    containerData: container
-                                    leftIndent: Theme.spacingL * 2
-                                    visible: serviceDelegate.isExpanded
+                                ActionButton {
+                                    text: "Restart All"
+                                    icon: "refresh"
+                                    enabled: modelData.runningCount > 0
+                                    leftIndent: Theme.spacingL
+                                    onTriggered: root.executeComposeAction(modelData.workingDir, modelData.configFile, "restart")
+                                }
+
+                                ActionButton {
+                                    text: "Stop All"
+                                    icon: "stop"
+                                    enabled: modelData.runningCount > 0
+                                    leftIndent: Theme.spacingL
+                                    onTriggered: root.executeComposeAction(modelData.workingDir, modelData.configFile, "stop")
+                                }
+
+                                ActionButton {
+                                    text: "View Logs"
+                                    icon: "description"
+                                    leftIndent: Theme.spacingL
+                                    onTriggered: root.executeComposeAction(modelData.workingDir, modelData.configFile, "logs")
+                                }
+                            }
+
+                            Rectangle {
+                                width: parent.width
+                                height: Theme.spacingXS
+                                color: "transparent"
+                            }
+
+                            Repeater {
+                                model: modelData.containers
+
+                                Column {
+                                    id: serviceDelegate
+                                    width: parent.width
+                                    spacing: 0
+
+                                    property var container: modelData
+                                    property bool isExpanded: root.expandedContainers[container.name] || false
+
+                                    ContainerHeader {
+                                        containerData: container
+                                        isExpanded: serviceDelegate.isExpanded
+                                        useComposeServiceName: true
+                                        leftIndent: Theme.spacingL
+                                        iconSize: Theme.iconSize - 2
+                                        baseHeight: 38
+                                        defaultColor: Theme.surfaceContainer
+                                        hoverColor: Theme.surfaceContainerHigh
+                                        onClicked: root.toggleContainer(container.name)
+                                    }
+
+                                    ContainerActions {
+                                        containerData: container
+                                        leftIndent: Theme.spacingL * 2
+                                        isExpanded: serviceDelegate.isExpanded
+                                    }
                                 }
                             }
                         }
