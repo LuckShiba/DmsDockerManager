@@ -263,6 +263,7 @@ PluginComponent {
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.surfaceVariantText
                 elide: Text.ElideRight
+                wrapMode: Text.NoWrap
                 width: parent.width
             }
         }
