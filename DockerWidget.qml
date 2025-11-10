@@ -280,6 +280,43 @@ PluginComponent {
         width: parent.width
         spacing: 0
 
+        Rectangle {
+            width: parent.width
+            height: containerData?.ports?.length > 0 ? portFlow.height + Theme.spacingM * 2 : 0
+            color: "transparent"
+            visible: containerData?.ports?.length > 0
+
+            Flow {
+                id: portFlow
+                anchors.left: parent.left
+                anchors.leftMargin: parent.leftIndent + Theme.iconSize + Theme.spacingM
+                anchors.right: parent.right
+                anchors.rightMargin: parent.leftIndent
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: Theme.spacingXS
+
+                Repeater {
+                    model: containerData?.ports || []
+
+                    Rectangle {
+                        height: 24
+                        width: portLabel.width + Theme.spacingS * 2
+                        radius: 6
+                        color: Theme.primary
+
+                        StyledText {
+                            id: portLabel
+                            anchors.centerIn: parent
+                            text: modelData.hostPort + " → " + modelData.containerPort.replace("/tcp", "").replace("/udp", "")
+                            font.pixelSize: Theme.fontSizeSmall
+                            font.weight: Font.Medium
+                            color: Theme.surface
+                        }
+                    }
+                }
+            }
+        }
+
         ActionButton {
             text: containerData?.isRunning ? "Restart" : "Start"
             icon: containerData?.isRunning ? "refresh" : "play_arrow"

@@ -139,6 +139,24 @@ Item {
                             const startedAt = new Date(container.State?.StartedAt || 0).getTime();
                             const finishedAt = new Date(container.State?.FinishedAt || 0).getTime();
                             const lastActivity = Math.max(startedAt, finishedAt);
+                            
+                            const ports = [];
+                            const portBindings = container.NetworkSettings?.Ports || {};
+                            for (const [containerPort, hostBindings] of Object.entries(portBindings)) {
+                                if (hostBindings && hostBindings.length > 0) {
+                                    hostBindings.forEach(binding => {
+                                        const hostPort = binding.HostPort;
+                                        const hostIp = binding.HostIp || "0.0.0.0";
+                                        if (hostPort) {
+                                            ports.push({
+                                                containerPort: containerPort,
+                                                hostPort: hostPort,
+                                                hostIp: hostIp
+                                            });
+                                        }
+                                    });
+                                }
+                            }
 
                             return {
                                 id: container.Id || "",
@@ -150,6 +168,7 @@ Item {
                                 isPaused: container.State?.Paused || false,
                                 created: container.Created || "",
                                 lastActivity: lastActivity,
+                                ports: ports,
                                 composeProject: labels["com.docker.compose.project"] || labels["io.podman.compose.project"] || "",
                                 composeService: labels["com.docker.compose.service"] || labels["io.podman.compose.service"] || "",
                                 composeWorkingDir: labels["com.docker.compose.project.working_dir"] || "",
