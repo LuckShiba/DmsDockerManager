@@ -19,11 +19,10 @@ Inspired by GNOME extension [Easy Docker Containers](https://extensions.gnome.or
 
 ## Installation
 
-<!--
 ### Using DMS cli
 
 ```sh
-dms plugins install DockerManager
+dms plugins install dockerManager
 ```
 
 ### Using DMS Settings
@@ -31,10 +30,8 @@ dms plugins install DockerManager
 1. Open Settings -> Plugins
 2. Click in "Browse"
 3. Enable third party plugins
-4. Install Docker Manager
-
-
- -->
+4. Install and enable Docker Manager
+5. Add "Docker Manager" to your DankBar widgets list
 
 ### Manual
 
@@ -44,7 +41,7 @@ git clone https://github.com/LuckShiba/DmsDockerManager ~/.config/DankMaterialSh
 ```
 2. Open Settings -> Plugins and click in "Scan"
 3. Enable "Docker Manager"
-4. Add "Docker Manager" to DankBar widget list
+4. Add "Docker Manager" to your DankBar widgets list
 
 ## Requirements
 
