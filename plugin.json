@@ -2,7 +2,7 @@
     "id": "dockerManager",
     "name": "Docker Manager",
     "description": "Display Docker container status and management controls",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "author": "LuckShiba",
     "type": "widget",
     "capabilities": ["docker-management", "dankbar-widget"],
