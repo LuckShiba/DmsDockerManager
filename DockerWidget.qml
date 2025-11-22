@@ -94,14 +94,14 @@ PluginComponent {
                 return Theme.error;
             if (globalRunningContainers.value > 0)
                 return Theme.primary;
-            return Theme.surfaceText;
+            return Theme.widgetIconColor || Theme.surfaceText;
         }
     }
 
     component DockerCount: StyledText {
         text: globalRunningContainers.value.toString()
         font.pixelSize: Theme.fontSizeMedium
-        color: Theme.surfaceText
+        color: Theme.widgetTextColor || Theme.surfaceText
         visible: globalRunningContainers.value > 0
     }
 
