@@ -5,7 +5,7 @@
     "version": "1.3.0",
     "author": "LuckShiba",
     "type": "widget",
-    "capabilities": ["docker-management", "dankbar-widget"],
+    "capabilities": ["dankbar-widget"],
     "component": "./DockerWidget.qml",
     "icon": "dns",
     "settings": "./DockerSettings.qml",
