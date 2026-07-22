@@ -83,6 +83,42 @@ PluginComponent {
         }
     }
 
+    PluginGlobalVar {
+        id: globalColimaAvailable
+        varName: "colimaAvailable"
+        defaultValue: false
+    }
+
+    PluginGlobalVar {
+        id: globalColimaRunning
+        varName: "colimaRunning"
+        defaultValue: false
+    }
+
+    PluginGlobalVar {
+        id: globalRuntimeMode
+        varName: "runtimeMode"
+        defaultValue: "auto"
+    }
+
+    PluginGlobalVar {
+        id: globalActiveRuntime
+        varName: "activeRuntime"
+        defaultValue: "None"
+    }
+
+    PluginGlobalVar {
+        id: globalColimaTransitioning
+        varName: "colimaTransitioning"
+        defaultValue: ""
+    }
+
+    PluginGlobalVar {
+        id: globalServiceTransitioning
+        varName: "serviceTransitioning"
+        defaultValue: ""
+    }
+
     function toggleContainer(containerId, parentProject) {
         const wasExpanded = root.expandedContainers[containerId] || false;
         const expanded = root.expandedContainers;
@@ -848,6 +884,7 @@ PluginComponent {
                     Qt.callLater(() => {
                         forceActiveFocus();
                     });
+                    DockerService.refresh();
                 }
             }
 
@@ -902,6 +939,7 @@ PluginComponent {
                     }
 
                     Row {
+                        id: headerButtons
                         anchors.right: parent.right
                         anchors.rightMargin: Theme.spacingS
                         anchors.verticalCenter: parent.verticalCenter
@@ -926,6 +964,29 @@ PluginComponent {
                             }
                         }
                     }
+
+                    Rectangle {
+                        id: runtimeBadge
+                        visible: globalActiveRuntime.value !== "None"
+                        height: 18
+                        radius: 9
+                        color: Theme.withAlpha(Theme.surfaceContainerHighest, 0.5)
+                        border.width: 1
+                        border.color: Theme.outline
+                        implicitWidth: badgeText.implicitWidth + Theme.spacingS * 2
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.right: headerButtons.visible ? headerButtons.left : parent.right
+                        anchors.rightMargin: Theme.spacingS
+
+                        StyledText {
+                            id: badgeText
+                            anchors.centerIn: parent
+                            text: globalActiveRuntime.value
+                            font.pixelSize: Theme.fontSizeExtraSmall
+                            font.weight: Font.SemiBold
+                            color: Theme.surfaceVariantText
+                        }
+                    }
                 }
 
                 DankListView {
@@ -938,7 +999,7 @@ PluginComponent {
                     rightMargin: Theme.spacingM
                     spacing: Theme.spacingS
                     clip: true
-                    visible: !root.groupByCompose
+                    visible: globalDockerAvailable.value && !root.groupByCompose
                     model: globalContainers.value
                     currentIndex: root.keyboardNavigationActive && !root.groupByCompose ? root.getSelectedIndex() : -1
 
@@ -1002,7 +1063,7 @@ PluginComponent {
                     rightMargin: Theme.spacingM
                     spacing: Theme.spacingS
                     clip: true
-                    visible: root.groupByCompose
+                    visible: globalDockerAvailable.value && root.groupByCompose
                     model: globalComposeProjects.value
                     currentIndex: root.keyboardNavigationActive && root.groupByCompose ? root.getSelectedProjectIndex() : -1
 
@@ -1152,7 +1213,185 @@ PluginComponent {
                         }
                     }
                 }
+
+                Item {
+                    id: colimaPanel
+                    width: parent.width
+                    height: root.popoutHeight - 46 - Theme.spacingXL
+                    visible: !globalDockerAvailable.value
+
+                    Column {
+                        anchors.centerIn: parent
+                        width: parent.width - Theme.spacingXL * 2
+                        spacing: Theme.spacingL
+
+                        DankIcon {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            name: {
+                                if (globalColimaTransitioning.value !== "" || globalServiceTransitioning.value !== "") return "sync"
+                                if (globalColimaAvailable.value && !globalColimaRunning.value && (globalRuntimeMode.value === "colima" || globalActiveRuntime.value === "Colima")) return "cloud_off"
+                                return "error_outline"
+                            }
+                            size: 48
+                            color: Theme.surfaceVariantText
+
+                            RotationAnimator on rotation {
+                                running: globalColimaTransitioning.value !== "" || globalServiceTransitioning.value !== ""
+                                loops: Animation.Infinite
+                                from: 0
+                                to: 360
+                                duration: 1500
+                            }
+                        }
+
+                        StyledText {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: {
+                                if (globalColimaTransitioning.value === "starting") return "Starting Colima VM..."
+                                if (globalColimaTransitioning.value === "stopping") return "Stopping Colima VM..."
+                                if (globalColimaTransitioning.value === "restarting") return "Restarting Colima VM..."
+                                if (globalServiceTransitioning.value === "starting") return "Starting " + (globalActiveRuntime.value === "Podman" ? "Podman" : "Docker") + "..."
+                                if (globalServiceTransitioning.value === "stopping") return "Stopping " + (globalActiveRuntime.value === "Podman" ? "Podman" : "Docker") + "..."
+                                if (globalServiceTransitioning.value === "restarting") return "Restarting " + (globalActiveRuntime.value === "Podman" ? "Podman" : "Docker") + "..."
+                                if (globalActiveRuntime.value === "Colima" && !globalColimaRunning.value) return "Colima is Stopped"
+                                if (globalActiveRuntime.value === "Colima" && globalColimaRunning.value) return "Colima Running but Docker Offline"
+                                if (globalActiveRuntime.value === "Podman") return "Podman Daemon Offline"
+                                return "Docker Daemon Offline"
+                            }
+                            font.pixelSize: Theme.fontSizeLarge
+                            font.weight: Font.Bold
+                            color: Theme.surfaceText
+                        }
+
+                        StyledText {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: parent.width
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.WordWrap
+                            font.pixelSize: Theme.fontSizeMedium
+                            color: Theme.surfaceVariantText
+                            text: {
+                                if (globalColimaTransitioning.value === "starting") return "Booting Colima VM. This might take up to a minute depending on resources..."
+                                if (globalColimaTransitioning.value === "stopping") return "Shutting down the Colima virtual machine safely..."
+                                if (globalColimaTransitioning.value === "restarting") return "Restarting the Colima container runtime VM..."
+                                if (globalServiceTransitioning.value === "starting") return "Starting the " + (globalActiveRuntime.value === "Podman" ? "Podman" : "Docker") + " service..."
+                                if (globalServiceTransitioning.value === "stopping") return "Stopping the " + (globalActiveRuntime.value === "Podman" ? "Podman" : "Docker") + " service..."
+                                if (globalServiceTransitioning.value === "restarting") return "Restarting the " + (globalActiveRuntime.value === "Podman" ? "Podman" : "Docker") + " service..."
+                                if (globalActiveRuntime.value === "Colima" && !globalColimaRunning.value) return "Colima container VM is currently offline. Start it to begin managing your Docker containers."
+                                if (globalActiveRuntime.value === "Colima" && globalColimaRunning.value) return "The Colima VM is active, but the Docker CLI cannot connect to the socket. Make sure DOCKER_HOST is set or the socket path is correct."
+                                if (globalActiveRuntime.value === "Podman") return "The Podman service is not running or is unreachable. Make sure the Podman system service or socket is active."
+                                if (globalRuntimeMode.value !== "colima" && globalColimaAvailable.value && globalActiveRuntime.value !== "Colima") return "Docker service could not be reached. Colima was detected on your system. You can switch to Colima mode in settings."
+                                return "The Docker daemon isn't running or is unreachable. If you're using Podman or custom sockets, check your settings."
+                            }
+                        }
+
+                        Row {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            spacing: Theme.spacingM
+                            visible: globalColimaTransitioning.value === "" && globalServiceTransitioning.value === ""
+
+                            ColimaButton {
+                                label: globalColimaRunning.value ? "Stop Colima" : "Start Colima"
+                                iconName: globalColimaRunning.value ? "stop" : "play_arrow"
+                                visible: (globalRuntimeMode.value === "colima" || (globalRuntimeMode.value === "auto" && globalActiveRuntime.value === "Colima")) && globalColimaAvailable.value
+                                isAccent: !globalColimaRunning.value
+                                onClicked: {
+                                    if (globalColimaRunning.value) {
+                                        DockerService.executeColimaAction("stop");
+                                    } else {
+                                        DockerService.executeColimaAction("start");
+                                    }
+                                }
+                            }
+
+                            ColimaButton {
+                                label: "Restart VM"
+                                iconName: "replay"
+                                visible: (globalRuntimeMode.value === "colima" || (globalRuntimeMode.value === "auto" && globalActiveRuntime.value === "Colima")) && globalColimaAvailable.value && globalColimaRunning.value
+                                isAccent: false
+                                onClicked: DockerService.executeColimaAction("restart")
+                            }
+
+                            ColimaButton {
+                                label: "Start Docker"
+                                iconName: "play_arrow"
+                                visible: (globalRuntimeMode.value === "native" || (globalRuntimeMode.value === "auto" && (globalActiveRuntime.value === "Docker" || globalActiveRuntime.value === "None")))
+                                isAccent: true
+                                onClicked: DockerService.executeServiceAction("start")
+                            }
+
+                            ColimaButton {
+                                label: "Start Podman"
+                                iconName: "play_arrow"
+                                visible: (globalRuntimeMode.value === "podman" || (globalRuntimeMode.value === "auto" && globalActiveRuntime.value === "Podman"))
+                                isAccent: true
+                                onClicked: DockerService.executeServiceAction("start")
+                            }
+
+                            ColimaButton {
+                                label: "Switch to Colima Mode"
+                                iconName: "settings"
+                                visible: globalRuntimeMode.value !== "colima" && globalColimaAvailable.value && globalActiveRuntime.value !== "Colima"
+                                isAccent: true
+                                onClicked: {
+                                    root.pluginService?.savePluginData("dockerManager", "runtimeMode", "colima");
+                                }
+                            }
+                        }
+                    }
+                }
             }
+        }
+    }
+
+    component ColimaButton: Rectangle {
+        id: colimaBtn
+        property string label: ""
+        property string iconName: ""
+        property bool isAccent: true
+        property bool disabled: false
+        signal clicked
+
+        height: 38
+        implicitWidth: Math.max(140, contentRow.implicitWidth + Theme.spacingM * 2)
+        radius: Theme.cornerRadius
+        color: disabled ? Theme.withAlpha(Theme.surfaceContainerHigh, 0.5)
+                        : (isAccent ? (mouseArea.containsMouse ? Theme.primaryHover : Theme.primary)
+                                    : (mouseArea.containsMouse ? Theme.surfaceHover : Theme.surfaceContainerHigh))
+        border.width: isAccent ? 0 : 1
+        border.color: Theme.outline
+
+        opacity: disabled ? 0.6 : 1.0
+
+        Row {
+            id: contentRow
+            anchors.centerIn: parent
+            spacing: Theme.spacingS
+
+            DankIcon {
+                name: colimaBtn.iconName
+                size: 16
+                color: isAccent ? Theme.onPrimary : Theme.surfaceText
+                visible: colimaBtn.iconName !== ""
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            StyledText {
+                text: colimaBtn.label
+                font.pixelSize: Theme.fontSizeSmall
+                font.weight: Font.Medium
+                color: isAccent ? Theme.onPrimary : Theme.surfaceText
+                anchors.verticalCenter: parent.verticalCenter
+            }
+        }
+
+        MouseArea {
+            id: mouseArea
+            anchors.fill: parent
+            hoverEnabled: !colimaBtn.disabled
+            cursorShape: colimaBtn.disabled ? Qt.ForbiddenCursor : Qt.PointingHandCursor
+            enabled: !colimaBtn.disabled
+            onClicked: colimaBtn.clicked()
         }
     }
 

@@ -23,6 +23,29 @@ PluginSettings {
         wrapMode: Text.WordWrap
     }
 
+    SelectionSetting {
+        id: runtimeModeSetting
+        settingKey: "runtimeMode"
+        label: "Container Runtime Mode"
+        description: "Choose how the plugin connects to your container runtime."
+        defaultValue: DockerService.defaults.runtimeMode
+        options: [
+            { label: "Auto-detect", value: "auto" },
+            { label: "Native Docker", value: "native" },
+            { label: "Colima VM", value: "colima" },
+            { label: "Podman", value: "podman" }
+        ]
+    }
+
+    StringSetting {
+        settingKey: "colimaProfile"
+        label: "Colima Profile"
+        description: "The name of the Colima profile to use (default: 'default')."
+        defaultValue: DockerService.defaults.colimaProfile
+        placeholder: DockerService.defaults.colimaProfile
+        visible: runtimeModeSetting.value === "colima" || runtimeModeSetting.value === "auto"
+    }
+
     StringSetting {
         settingKey: "dockerBinary"
         label: "Container Runtime Binary"
