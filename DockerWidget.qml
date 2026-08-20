@@ -557,6 +557,9 @@ PluginComponent {
 
         Flow {
             id: portFlow
+            // Above headerMouse (declared later = stacked on top) so the port
+            // badges receive clicks; gaps still fall through to the header.
+            z: 1
             anchors.left: parent.left
             anchors.leftMargin: containerHeader.leftIndent
             anchors.right: parent.right
@@ -581,9 +584,23 @@ PluginComponent {
                     height: 24
                     width: portContent.width + Theme.spacingM
                     radius: 12
-                    color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
+                    // TCP ports open in the browser on click; hover highlights them
+                    readonly property bool isTcp: !(modelData.containerPort || "").includes("/udp")
+                    color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, (isTcp && portMouse.containsMouse) ? 0.3 : 0.15)
                     border.width: 1
                     border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.3)
+
+                    MouseArea {
+                        id: portMouse
+                        anchors.fill: parent
+                        enabled: parent.isTcp
+                        hoverEnabled: true
+                        cursorShape: parent.isTcp ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        onClicked: {
+                            const host = (modelData.hostIp && modelData.hostIp !== "0.0.0.0") ? modelData.hostIp : "localhost";
+                            Qt.openUrlExternally("http://" + host + ":" + modelData.hostPort);
+                        }
+                    }
 
                     Row {
                         id: portContent
