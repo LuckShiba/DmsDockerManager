@@ -294,7 +294,7 @@ Item {
         }
 
         if (composeCommands[action]) {
-            const cmd = ["sh", "-c", sh`cd ${workingDir} && ${dockerBinary} compose ${fFlags} ${composeCommands[action]}`];
+            const cmd = ["sh", "-c", sh`cd ${workingDir} && ${dockerBinary} compose ${configFlags} ${composeCommands[action]}`];
             const cmdArray = systemdRunAvailable ? ["systemd-run", "--user", "--scope", "--", ...cmd] : cmd;
             Quickshell.execDetached(cmdArray);
             Qt.callLater(() => {
