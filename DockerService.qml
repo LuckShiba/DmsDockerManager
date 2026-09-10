@@ -10,12 +10,12 @@ Item {
     id: root
 
     readonly property var defaults: ({
-            debounceDelay: 300,
-            dockerBinary: "docker",
-            terminalApp: "alacritty --hold",
-            shellPath: "/bin/sh",
-            pollingInterval: 0
-        })
+        debounceDelay: 300,
+        dockerBinary: "docker",
+        terminalApp: "alacritty --hold",
+        shellPath: "/bin/sh",
+        pollingInterval: 0
+    })
 
     readonly property string pluginId: "dockerManager"
 
@@ -152,7 +152,7 @@ Item {
                             const startedAt = new Date(container.State?.StartedAt || 0).getTime();
                             const finishedAt = new Date(container.State?.FinishedAt || 0).getTime();
                             const lastActivity = Math.max(startedAt, finishedAt);
-                            
+
                             const ports = [];
                             const portBindings = container.NetworkSettings?.Ports || {};
                             for (const [containerPort, hostBindings] of Object.entries(portBindings)) {
