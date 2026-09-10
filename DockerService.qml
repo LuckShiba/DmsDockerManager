@@ -268,30 +268,33 @@ Item {
         return false;
     }
 
-    function executeComposeAction(workingDir, configFile, action) {
+    function executeComposeAction(workingDir, configFiles, action) {
         if (!workingDir) {
             console.error("DockerManager: Cannot execute compose action without working directory");
             return false;
         }
+        const configFlags = [];
+        for (const configFile of configFiles.split(',')) {
+            configFlags.push("-f", configFile);
+        }
 
         const composeCommands = {
-            up: [dockerBinary, "compose", "-f", configFile, "up", "-d"],
-            down: [dockerBinary, "compose", "-f", configFile, "down"],
-            restart: [dockerBinary, "compose", "-f", configFile, "restart"],
-            stop: [dockerBinary, "compose", "-f", configFile, "stop"],
-            start: [dockerBinary, "compose", "-f", configFile, "start"],
-            pull: [dockerBinary, "compose", "-f", configFile, "pull"],
-            logs: null
+            up: ["up", "-d"],
+            down: ["down"],
+            restart: ["restart"],
+            stop: ["stop"],
+            start: ["start"],
+            pull: ["pull"],
         };
 
         if (action === "logs") {
-            const cmd = `cd "${workingDir}" && ${dockerBinary} compose -f ${configFile} logs -f`;
-            Quickshell.execDetached(["sh", "-c", `${terminalApp} -e sh -c '${cmd}'`]);
+            const cmd = sh`cd ${workingDir} && ${dockerBinary} compose ${configFlags} logs -f`;
+            Quickshell.execDetached(["sh", "-c", sh`${raw(terminalApp)} -e sh -c ${cmd}`]);
             return true;
         }
 
         if (composeCommands[action]) {
-            const cmd = ["sh", "-c", `cd "${workingDir}" && ${composeCommands[action].join(" ")}`];
+            const cmd = ["sh", "-c", sh`cd ${workingDir} && ${dockerBinary} compose ${fFlags} ${composeCommands[action]}`];
             const cmdArray = systemdRunAvailable ? ["systemd-run", "--user", "--scope", "--", ...cmd] : cmd;
             Quickshell.execDetached(cmdArray);
             Qt.callLater(() => {
@@ -303,10 +306,31 @@ Item {
     }
 
     function openLogs(containerId) {
-        Quickshell.execDetached(["sh", "-c", terminalApp + " -e " + dockerBinary + " logs -f " + containerId]);
+        Quickshell.execDetached(["sh", "-c", sh`${raw(terminalApp)} -e ${dockerBinary} logs -f ${containerId}`]);
     }
 
     function openExec(containerId) {
-        Quickshell.execDetached(["sh", "-c", terminalApp + " -e " + dockerBinary + " exec -it " + containerId + " " + shellPath]);
+        Quickshell.execDetached(["sh", "-c", sh`${raw(terminalApp)} -e ${dockerBinary} exec -it ${containerId} ${shellPath}`]);
+    }
+
+    function sh(literals, ...values) {
+        return values.reduce((prev, value, i) => prev + escapeShell(value) + literals[i + 1], literals[0]);
+    }
+
+    function raw(arg) {
+        return { shRaw: arg }
+    }
+
+    function escapeShell(arg) {
+        if (Array.isArray(arg)) {
+            return arg.map(x => escapeShell(x)).join(" ");
+        }
+        if (arg.shRaw) {
+            return arg.shRaw;
+        }
+        if (arg.replace(/[a-zA-Z0-9+=/.,_-]+/, '') === '') {
+            return arg;
+        }
+        return `'${arg.replace(/'/g, `'"'"'`)}'`;
     }
 }
