@@ -142,7 +142,7 @@ Item {
     }
 
     function fetchContainers() {
-        Proc.runCommand(`${pluginId}.dockerInspect`, ["sh", "-c", `${dockerBinary} container inspect $(${dockerBinary} container ls -aq)`], (stdout, exitCode) => {
+        Proc.runCommand(`${pluginId}.dockerInspect`, ["sh", "-c", sh`${dockerBinary} container inspect $(${dockerBinary} container ls -aq)`], (stdout, exitCode) => {
             if (exitCode === 0) {
                 try {
                     const containers = JSON.parse(stdout).map(container => {
@@ -275,7 +275,7 @@ Item {
         }
         const configFlags = [];
         for (const configFile of configFiles.split(',')) {
-            configFlags.push("-f", configFile);
+            configFlags.push("-f", configFile.trim());
         }
 
         const composeCommands = {
@@ -322,15 +322,24 @@ Item {
     }
 
     function escapeShell(arg) {
+        if (arg == null) {
+            return "";
+        }
+        
         if (Array.isArray(arg)) {
             return arg.map(x => escapeShell(x)).join(" ");
         }
-        if (arg.shRaw) {
+        
+        if (arg?.shRaw) {
             return arg.shRaw;
         }
-        if (arg.replace(/[a-zA-Z0-9+=/.,_-]+/, '') === '') {
-            return arg;
+
+        const str = String(arg);
+        
+        if (/^[\w-+=/.,]+$/.test(str)) {
+            return str;
         }
-        return `'${arg.replace(/'/g, `'"'"'`)}'`;
+        
+        return `'${str.replace(/'/g, `'"'"'`)}'`;
     }
 }
