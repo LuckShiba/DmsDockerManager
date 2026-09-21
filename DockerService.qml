@@ -105,6 +105,9 @@ Item {
             if (dockerAvailable) {
                 console.log("DockerManager: Attempting to restart events listener...");
                 eventsProcess.running = true;
+            } else {
+                refresh();
+                eventsProcess.running = true;
             }
         }
     }
