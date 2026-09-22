@@ -112,6 +112,13 @@ Item {
         }
     }
 
+    property var availabilityRetryTimer: Timer {
+        interval: 5000
+        running: false
+        repeat: false
+        onTriggered: refresh()
+    }
+
     property var pollingTimer: Timer {
         interval: root.pollingInterval
         running: root.dockerAvailable && root.pollingInterval > 0
@@ -140,6 +147,7 @@ Item {
                 fetchContainers();
             } else {
                 updateContainers();
+                availabilityRetryTimer.start();
             }
         }, 100);
     }
