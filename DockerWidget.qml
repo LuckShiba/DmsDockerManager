@@ -11,6 +11,7 @@ PluginComponent {
     property var expandedProjects: ({})
     property bool groupByCompose: pluginData.groupByCompose || false
     property bool showPorts: pluginData.showPorts ?? true
+    property string searchQuery: ""
     
     property bool autoScrollOnExpand: pluginData.autoScrollOnExpand ?? true
     property string selectedItemId: ""
@@ -83,6 +84,42 @@ PluginComponent {
         }
     }
 
+    readonly property var filteredContainers: {
+        const all = globalContainers.value || [];
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return all;
+        return all.filter(c => (c.name || "").toLowerCase().includes(q));
+    }
+
+    readonly property var filteredProjects: {
+        const all = globalComposeProjects.value || [];
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return all;
+        const result = [];
+        for (const p of all) {
+            if ((p.name || "").toLowerCase().includes(q)) {
+                result.push(p);
+                continue;
+            }
+            const matched = (p.containers || []).filter(c =>
+                (c.name || "").toLowerCase().includes(q) ||
+                (c.composeService || "").toLowerCase().includes(q));
+            if (matched.length > 0) {
+                result.push(Object.assign({}, p, {
+                    containers: matched,
+                    runningCount: matched.filter(c => c.isRunning).length,
+                    totalCount: matched.length
+                }));
+            }
+        }
+        return result;
+    }
+
+    onSearchQueryChanged: {
+        if (keyboardNavigationActive)
+            ensureValidSelection();
+    }
+
     function toggleContainer(containerId, parentProject) {
         const wasExpanded = root.expandedContainers[containerId] || false;
         const expanded = root.expandedContainers;
@@ -135,11 +172,11 @@ PluginComponent {
 
     function buildNavigableList() {
         if (!groupByCompose) {
-            return globalContainers.value.map(c => ({type: 'container', id: c.id, data: c}));
+            return filteredContainers.map(c => ({type: 'container', id: c.id, data: c}));
         }
-        
+
         const list = [];
-        globalComposeProjects.value.forEach(project => {
+        filteredProjects.forEach(project => {
             list.push({type: 'project', id: project.name, data: project});
             if (expandedProjects[project.name]) {
                 project.containers.forEach(container => {
@@ -363,7 +400,7 @@ PluginComponent {
         if (!groupByCompose || !selectedItemId) return -1;
         
         const projectName = selectedIsContainer ? selectedParentProject : selectedItemId;
-        return globalComposeProjects.value.findIndex(p => p.name === projectName);
+        return filteredProjects.findIndex(p => p.name === projectName);
     }
 
     component DockerIcon: DankNFIcon {
@@ -928,10 +965,32 @@ PluginComponent {
                     }
                 }
 
+                Item {
+                    id: searchRow
+                    width: parent.width
+                    height: searchField.height + Theme.spacingS * 2
+
+                    DankTextField {
+                        id: searchField
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.leftMargin: Theme.spacingM
+                        anchors.rightMargin: Theme.spacingM
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: Math.round(Theme.fontSizeMedium * 2.5)
+                        leftIconName: "search"
+                        placeholderText: "Search containers..."
+                        showClearButton: true
+                        ignoreUpDownKeys: true
+                        Component.onCompleted: text = root.searchQuery
+                        onTextEdited: root.searchQuery = text
+                    }
+                }
+
                 DankListView {
                     id: containerList
                     width: parent.width
-                    height: root.popoutHeight - 46 - Theme.spacingXL
+                    height: root.popoutHeight - 46 - searchRow.height - Theme.spacingXL
                     topMargin: 0
                     bottomMargin: Theme.spacingS
                     leftMargin: Theme.spacingM
@@ -939,7 +998,7 @@ PluginComponent {
                     spacing: Theme.spacingS
                     clip: true
                     visible: !root.groupByCompose
-                    model: globalContainers.value
+                    model: root.filteredContainers
                     currentIndex: root.keyboardNavigationActive && !root.groupByCompose ? root.getSelectedIndex() : -1
 
                     Component.onCompleted: {
@@ -995,7 +1054,7 @@ PluginComponent {
                 DankListView {
                     id: projectList
                     width: parent.width
-                    height: root.popoutHeight - 46 - Theme.spacingXL
+                    height: root.popoutHeight - 46 - searchRow.height - Theme.spacingXL
                     topMargin: 0
                     bottomMargin: Theme.spacingS
                     leftMargin: Theme.spacingM
@@ -1003,7 +1062,7 @@ PluginComponent {
                     spacing: Theme.spacingS
                     clip: true
                     visible: root.groupByCompose
-                    model: globalComposeProjects.value
+                    model: root.filteredProjects
                     currentIndex: root.keyboardNavigationActive && root.groupByCompose ? root.getSelectedProjectIndex() : -1
 
                     Component.onCompleted: {
