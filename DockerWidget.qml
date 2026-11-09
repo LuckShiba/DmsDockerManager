@@ -1186,7 +1186,6 @@ PluginComponent {
         id: actionButton
         property string text: ""
         property string icon: ""
-        property bool enabled: true
         property bool isSelected: false
         property real leftIndent: Theme.spacingL + Theme.spacingM
         signal triggered
